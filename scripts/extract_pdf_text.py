@@ -109,8 +109,10 @@ def parse_part_line(line):
     # Everything else is the description
     description = " ".join(left_side[1:])
 
-    # Convert raw string values into proper numeric types
-    quantity = int(quantity_raw)
+    # Convert raw string values into normalized numeric types.
+    # Quantity is parsed as float because the source data may contain
+    # fractional values like 0.5.
+    quantity = float(quantity_raw)
     cost = clean_money_value(cost_raw)
     price = clean_money_value(price_raw)
     margin = clean_money_value(margin_raw)
@@ -133,10 +135,34 @@ if __name__ == "__main__":
     # Extract lines from the PDF
     lines = extract_lines_from_pdf(PDF_PATH)
 
-    # # Only keep lines that look like part records
-    part_lines = [line for line in lines if classify_line(line) == "part"]
+    # Tracks supplier from "Supplier Code:"
+    current_supplier = None
 
-    # Parse and print the first 10 records for verification
-    for line in part_lines[:10]:
-        parsed = parse_part_line(line)
-        print(parsed)
+    # Stores all parsed part data
+    parsed_records = []
+
+for line in lines:
+    line_type = classify_line(line)
+
+    # update supplier context when a new supplier section starts
+    if line_type == "supplier":
+        current_supplier = line.split(":")[1].strip()
+        continue
+
+    # Ignore headers, subtotals, and other non-part lines
+    if line_type != "part":
+        continue
+
+    # Parse the current part line
+    parsed = parse_part_line(line)
+
+    if not parsed:
+        continue
+    # Store the supplier from the surrounding group for validation
+    parsed["supplier_from_group"] = current_supplier
+
+    parsed_records.append(parsed)
+
+# Print the first 10 parsed records for verification
+for record in parsed_records[:10]:
+    print(record)
