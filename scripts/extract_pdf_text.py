@@ -141,12 +141,20 @@ if __name__ == "__main__":
     # Stores all parsed part data
     parsed_records = []
 
+    # Stores valid records for potential export or further processing
+    valid_records = []
+
+    # Mismatched supplier codes
+    supplier_mismatches = []
+
+
 for line in lines:
     line_type = classify_line(line)
 
     # update supplier context when a new supplier section starts
     if line_type == "supplier":
-        current_supplier = line.split(":")[1].strip()
+        # Get the supplier code after "Supplier Code:"
+        current_supplier = line.split(":")[1].strip().split()[0] 
         continue
 
     # Ignore headers, subtotals, and other non-part lines
@@ -158,11 +166,37 @@ for line in lines:
 
     if not parsed:
         continue
+
     # Store the supplier from the surrounding group for validation
     parsed["supplier_from_group"] = current_supplier
 
+    # Keep a record of every parsed row
     parsed_records.append(parsed)
 
-# Print the first 10 parsed records for verification
-for record in parsed_records[:10]:
+    # Exclude supplier mismatches from the cleaned dataset
+    if parsed["supplier_code"] != parsed["supplier_from_group"]:
+        supplier_mismatches.append(parsed)
+        continue
+
+    # Only validated records make it into the cleaned dataset
+    valid_records.append(parsed)
+
+# Print short summary to verify parser behavior
+print(f"Total parsed records: {len(parsed_records)}")
+
+# Print valid records count after supplier mismatch filtering
+print(f"Valid records: {len(valid_records)}")
+
+# Print excluded records count due to supplier mismatches
+print(f"Excluded supplier mismatches: {len(supplier_mismatches)}")
+
+# Print a small sample of parsed records for spot checking
+print("\nFirst 5 valid records:")
+for record in valid_records[:5]:
     print(record)
+
+# If mismatches exist, print a few examples for debugging
+if supplier_mismatches:
+    print("\nSupplier mismatch examples:")
+    for record in supplier_mismatches[:5]:
+        print(record)
