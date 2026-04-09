@@ -64,6 +64,15 @@ def classify_line(line):
     # Everything else is assumed to be a part line, will validate later
     return "part"
 
+def clean_money_value(value):
+    # Remove currency symbols and commas, then convert to float
+    return float(value.replace("$", "").replace(",", ""))
+
+def clean_percent_value(value):
+    # Remove percent symbol and convert to float
+    return float(value.replace("%", ""))
+
+
 def parse_part_line(line):
     """
     Parses a single inventory line into structured fields.
@@ -79,11 +88,11 @@ def parse_part_line(line):
         return None
     
     # Parse fixed-position fields from the right side
-    margin_percent = tokens[-1]
-    margin = tokens[-2]
-    price = tokens[-3]
-    cost = tokens[-4]
-    quantity = tokens[-5]
+    margin_percent_raw = tokens[-1]
+    margin_raw = tokens[-2]
+    price_raw = tokens[-3]
+    cost_raw = tokens[-4]
+    quantity_raw = tokens[-5]
     category_code = tokens[-6]
     supplier_code = tokens[-7]
 
@@ -99,6 +108,13 @@ def parse_part_line(line):
 
     # Everything else is the description
     description = " ".join(left_side[1:])
+
+    # Convert raw string values into proper numeric types
+    quantity = int(quantity_raw)
+    cost = clean_money_value(cost_raw)
+    price = clean_money_value(price_raw)
+    margin = clean_money_value(margin_raw)
+    margin_percent = clean_percent_value(margin_percent_raw)
 
     return {
         "part_number": part_number,
