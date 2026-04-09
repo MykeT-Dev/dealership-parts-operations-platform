@@ -1,0 +1,20 @@
+# Python virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Local environment/config files
+.env
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Raw source data (do not commit real inventory export)
+data/*.pdf
+
+# Ignore future generated files if needed
+# data/raw/
+# data/interim/
