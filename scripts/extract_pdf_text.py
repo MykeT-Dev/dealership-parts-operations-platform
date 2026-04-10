@@ -1,16 +1,20 @@
+import csv
 import pdfplumber
 
 # Path to the PDF file
 PDF_PATH = "data/parts_inventory.pdf"
 
-def extract_lines_from_pdf(pdf_path):
+# Output path
+OUTPUT_CSV_PATH = 'data/processed/parts_inventory_clean.csv'
+
+def extract_lines_from_pdf(PDF_PATH):
     """
     Extracts all non-empty lines from the PDF to a flat list.
     """
     all_lines = []
 
     # Open the PDF file using pdfplumber
-    with pdfplumber.open(pdf_path) as pdf:
+    with pdfplumber.open(PDF_PATH) as pdf:
         for page_number, page in enumerate(pdf.pages, start=1):
             # Extract text from the page
             text = page.extract_text()
@@ -130,6 +134,31 @@ def parse_part_line(line):
         "margin_percent": margin_percent
     }
 
+def export_valid_records_to_csv(valid_records, output_path):
+    """
+    Exports cleaned valid records to a CSV file.
+    """
+
+    output_columns = [
+        "part_number",
+        "description",
+        "supplier_code",
+        "category_code",
+        "quantity",
+        "cost",
+        "price",
+        "margin",
+        "margin_percent",
+        "supplier_from_group"
+    ]
+
+    with open(output_path, "w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=output_columns)
+        writer.writeheader()
+
+        for record in valid_records:
+            writer.writerow(record)
+
 
 if __name__ == "__main__":
     # Extract lines from the PDF
@@ -148,55 +177,60 @@ if __name__ == "__main__":
     supplier_mismatches = []
 
 
-for line in lines:
-    line_type = classify_line(line)
+    for line in lines:
+        line_type = classify_line(line)
 
-    # update supplier context when a new supplier section starts
-    if line_type == "supplier":
-        # Get the supplier code after "Supplier Code:"
-        current_supplier = line.split(":")[1].strip().split()[0] 
-        continue
+        # update supplier context when a new supplier section starts
+        if line_type == "supplier":
+            # Get the supplier code after "Supplier Code:"
+            current_supplier = line.split(":")[1].strip().split()[0] 
+            continue
 
-    # Ignore headers, subtotals, and other non-part lines
-    if line_type != "part":
-        continue
+        # Ignore headers, subtotals, and other non-part lines
+        if line_type != "part":
+            continue
 
-    # Parse the current part line
-    parsed = parse_part_line(line)
+        # Parse the current part line
+        parsed = parse_part_line(line)
 
-    if not parsed:
-        continue
+        if not parsed:
+            continue
 
-    # Store the supplier from the surrounding group for validation
-    parsed["supplier_from_group"] = current_supplier
+        # Store the supplier from the surrounding group for validation
+        parsed["supplier_from_group"] = current_supplier
 
-    # Keep a record of every parsed row
-    parsed_records.append(parsed)
+        # Keep a record of every parsed row
+        parsed_records.append(parsed)
 
-    # Exclude supplier mismatches from the cleaned dataset
-    if parsed["supplier_code"] != parsed["supplier_from_group"]:
-        supplier_mismatches.append(parsed)
-        continue
+        # Exclude supplier mismatches from the cleaned dataset
+        if parsed["supplier_code"] != parsed["supplier_from_group"]:
+            supplier_mismatches.append(parsed)
+            continue
 
-    # Only validated records make it into the cleaned dataset
-    valid_records.append(parsed)
+        # Only validated records make it into the cleaned dataset
+        valid_records.append(parsed)
 
-# Print short summary to verify parser behavior
-print(f"Total parsed records: {len(parsed_records)}")
+    export_valid_records_to_csv(valid_records, OUTPUT_CSV_PATH)
 
-# Print valid records count after supplier mismatch filtering
-print(f"Valid records: {len(valid_records)}")
+    # Print CSV export
+    print(f"Clean CSV exported: {OUTPUT_CSV_PATH}")
 
-# Print excluded records count due to supplier mismatches
-print(f"Excluded supplier mismatches: {len(supplier_mismatches)}")
+    # Print short summary to verify parser behavior
+    print(f"Total parsed records: {len(parsed_records)}")
 
-# Print a small sample of parsed records for spot checking
-print("\nFirst 5 valid records:")
-for record in valid_records[:5]:
-    print(record)
+    # Print valid records count after supplier mismatch filtering
+    print(f"Valid records: {len(valid_records)}")
 
-# If mismatches exist, print a few examples for debugging
-if supplier_mismatches:
-    print("\nSupplier mismatch examples:")
-    for record in supplier_mismatches[:5]:
+    # Print excluded records count due to supplier mismatches
+    print(f"Excluded supplier mismatches: {len(supplier_mismatches)}")
+
+    # Print a small sample of parsed records for spot checking
+    print("\nFirst 5 valid records:")
+    for record in valid_records[:5]:
         print(record)
+
+    # If mismatches exist, print a few examples for debugging
+    if supplier_mismatches:
+        print("\nSupplier mismatch examples:")
+        for record in supplier_mismatches[:5]:
+            print(record)
