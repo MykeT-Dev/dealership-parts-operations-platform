@@ -59,7 +59,7 @@ def export_categories_to_csv(categories, output_path):
 
 if __name__ == "__main__":
     records = load_records_from_csv(INPUT_CSV_PATH)
-    categories = extract_unique_categoryies(records)
+    categories = extract_unique_categories(records)
 
     export_categories_to_csv(categories, OUTPUT_CSV_PATH)
 
