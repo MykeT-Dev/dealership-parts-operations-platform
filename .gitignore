@@ -18,3 +18,11 @@ data/*.pdf
 # Ignore future generated files if needed
 # data/raw/
 # data/interim/
+
+# Frontend (React / Vite)
+frontend/node_modules/
+frontend/dist/
+
+# Environment variables (backend + future frontend)
+.env
+.env.*
