@@ -16,6 +16,13 @@ class Category(Base):
         default=uuid.uuid4
     )
 
+    # Short code from cleaned source data, used for imports and matching
+    category_code: Mapped[str] = mapped_column(
+        String(50),
+        unique=True,
+        nullable=False
+    )
+
     # Human-readable category name
     name: Mapped[str] = mapped_column(
         String(100),

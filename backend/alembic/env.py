@@ -6,6 +6,18 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import settings
 from app.db.base import Base
 
+# Import models so Alembic can detect them
+from app.models.part import Part
+
+# Import Categories
+from app.models.category import Category
+
+# Register Supplier model
+from app.models.supplier import Supplier
+
+# Register PartSupplier model
+from app.models.part_supplier import PartSupplier
+
 # This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
