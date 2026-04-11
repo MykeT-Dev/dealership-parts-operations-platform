@@ -8,7 +8,7 @@ They do not include internal supplier cost or margin data.
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -117,6 +117,9 @@ def list_parts(
         if in_stock is True:
             statement = statement.where(Part.quantity_on_hand > 0)
 
+    count_statement = select(func.count()).select_from(statement.subquery())
+    total = db.execute(count_statement).scalar_one()
+
     # Apply stable ordering before pagination
     statement = (
         statement
@@ -144,6 +147,7 @@ def list_parts(
         limit=limit,
         offset=offset,
         count=len(items),
+        total=total,
         items=items,
     )
 

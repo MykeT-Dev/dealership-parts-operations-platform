@@ -45,4 +45,5 @@ class PartListResponse(BaseModel):
     limit: int
     offset: int
     count: int
+    total: int
     items: list[PartListItem]
