@@ -46,3 +46,14 @@
   color: #9ca3af;
   font-size: 14px;
 }
+
+.parts-list__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.parts-list__link:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
