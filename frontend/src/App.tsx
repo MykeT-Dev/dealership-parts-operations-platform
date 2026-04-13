@@ -20,13 +20,93 @@ type PartListResponse = {
   items: PartListItem[]
 }
 
+type PartDetail = {
+  id: string
+  part_number: string
+  description: string
+  public_price: string
+  stock_status: string
+  category_name: string | null
+  category_code: string | null
+}
+
+function formatPrice(price: string) {
+  return `$${Number(price).toFixed(2)}`
+}
+
 function PartDetailPage() {
   const { id } = useParams()
 
+  const [part, setPart] = useState<PartDetail | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchPart() {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const response = await fetch(`http://127.0.0.1:8000/parts/${id}`)
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch part.')
+        }
+
+        const data = await response.json()
+        setPart(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (id) {
+      fetchPart()
+    }
+  }, [id])
+
   return (
     <div className="app">
-      <h1 className="app__title">Part Detail Page</h1>
-      <p className="app__status">Selected part ID: {id}</p>
+      <div className="part-detail-layout">
+        <div className="part-detail-header">
+          <Link to="/" className="back-link">
+            ← Back to Parts
+          </Link>
+          <h1 className="app__title">Part Detail</h1>
+        </div>
+    </div>
+
+      {isLoading && (
+        <div className="part-detail-card">
+          <p className="app__status">Loading part details...</p>
+        </div>
+      )}
+
+      {error && <p className="app__error">Error: {error}</p>}
+
+      {part && (
+  <div className="part-detail-card">
+      <h2 className="part-detail-card__title">{part.part_number}</h2>
+      <p className="part-detail-card__description">{part.description}</p>
+
+      <div className="part-detail-card__meta">
+        <p>
+          <strong>Price:</strong> {formatPrice(part.public_price)}
+        </p>
+        <p>
+          <strong>Status:</strong> {part.stock_status}
+        </p>
+        <p>
+          <strong>Category:</strong> {part.category_name ?? 'N/A'}
+        </p>
+        <p>
+          <strong>Category Code:</strong> {part.category_code ?? 'N/A'}
+        </p>
+      </div>
+    </div>
+  )}
     </div>
   )
 }
@@ -38,6 +118,7 @@ function App() {
   const [searchInput, setSearchInput] = useState('')
   const [submittedSearch, setSubmittedSearch] = useState('')
   const [offset, setOffset] = useState(0)
+  const [inStockOnly, setInStockOnly] = useState(false)
 
   async function fetchParts() {
     try {
@@ -45,6 +126,11 @@ function App() {
       setError(null)
 
       const params = new URLSearchParams()
+
+      // Only include the in_stock when the toggle is on
+      if (inStockOnly) {
+        params.append('in_stock', 'true')
+      }
 
       // Add the submitted search term only if the user searched for something
       if (submittedSearch.trim()) {
@@ -80,7 +166,7 @@ function App() {
 
   useEffect(() => {
     fetchParts()
-  }, [submittedSearch, offset])
+  }, [submittedSearch, offset,inStockOnly])
 
   const limit = data?.limit ?? 25
   const currentPage = Math.floor(offset / limit) + 1
@@ -119,6 +205,18 @@ function App() {
                 placeholder="Search parts"
               />
               <button type="submit">Search</button>
+
+              <label className="stock-toggle">
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(event) => {
+                    setOffset(0)
+                    setInStockOnly(event.target.checked)
+                  }}
+                />
+                In Stock Only
+              </label>
             </form>
 
             {isLoading && <p className="app__status">Loading parts...</p>}
@@ -138,7 +236,7 @@ function App() {
                           <Link to={`/parts/${part.id}`} className="parts-list__link">
                             <strong>{part.part_number}</strong> - {part.description}
                             <div className="parts-list__meta">
-                              {part.public_price} - {part.stock_status}
+                              {formatPrice(part.public_price)} - {part.stock_status}
                             </div>
                           </Link>
                         </li>
